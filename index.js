@@ -3,51 +3,42 @@ const app = express();
 const mongoose = require('mongoose');
 require('dotenv').config();
 const cors = require('cors');
-console.log('port.env:', process.env.PORT);
-app.use(cors());
-app.use(express.json());
 
-const url = process.env.MongoDB_URL;
-mongoose.connect(url).then(() => {
-  console.log('mongoDB connected');
-});
-
+// Middlewares
+app.use(cors({ origin: "*" })); // مؤقت، للـ Frontend
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
 
-const UsersRoutes = require('./routes/UserRoutes.js');
-const httpStatus = require('./utiltes/HttpHandle.js'); 
-const MenuRoutes = require('./routes/MenuRoutes.js');
-const BlogRoutes = require('./routes/Blogs.js');
-const TableRoutes = require('./routes/TableRoutes.js');
-const DashboardRoutes = require('./routes/Dashboard.js');
+// MongoDB
+mongoose.connect(process.env.MongoDB_URL)
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.log('MongoDB connection error:', err));
 
+// Routes
 app.get('/api/message', (req, res) => {
   res.json({ message: 'Hello from Node.js!' });
 });
 
+// باقي Routes
+const UsersRoutes = require('./routes/UserRoutes.js');
+const MenuRoutes = require('./routes/MenuRoutes.js');
 app.use('/api/Users', UsersRoutes);
 app.use('/api/Menu', MenuRoutes);
-app.use('/api/Table', TableRoutes);
-app.use('/api/Blog', BlogRoutes);
-app.use('/api/dashboard', DashboardRoutes);
 
-app.all('/*', (req, res, next) => {
-  return res
-    .status(404)
-    .json({ status: httpStatus.ERROR, data: { Message: 'url not found' } });
+// Error / 404 handler
+app.all('/*', (req, res) => {
+  res.status(404).json({ message: "URL not found" });
 });
-
-app.use((error, req, res, next) => {
-  res.status(error.statusCode || 500).json({
-    status: error.statusText || httpStatus.ERROR,
-    message: error.message,
-    code: error.statusCode || 500,
-    data: null,
+app.use((err, req, res, next) => {
+  res.status(err.statusCode || 500).json({
+    message: err.message || "Server Error",
   });
 });
 
-app.listen(process.env.PORT, () => {
-  console.log('listening on  port 8000');
-});
+// **مهم جدًا**: لو Localhost فقط
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 8000;
+  app.listen(PORT, () => console.log('Server running on port', PORT));
+}
+
+module.exports = app; // بدل listen → لـ Vercel
