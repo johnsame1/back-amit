@@ -4,8 +4,6 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 const cors = require('cors');
 console.log('port.env:', process.env.PORT);
-console.log('process', process.env.MongoDB_URL);
-
 app.use(cors());
 app.use(express.json());
 
